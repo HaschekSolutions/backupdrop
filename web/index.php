@@ -1,8 +1,9 @@
 <?php
 
-// user settings
+// global user settings
 define('KEEP_N_BACKUPS',0);
-define('KEEP_N_GIGABYTES',0.5);
+define('KEEP_N_DAYS',0);
+define('KEEP_N_GIGABYTES',0);
 
 // basic path definitions
 define('DS', DIRECTORY_SEPARATOR);
@@ -12,14 +13,18 @@ ini_set('display_errors','On');
 //timezone to UTC (+0)
 date_default_timezone_set('UTC');
 
+//includes
+require_once(ROOT.DS.'lib'.DS.'encryption.php');
+
+
 //getting the url as array
 $url = array_filter(explode('/',ltrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH),'/')));
 
 //main logic
 //deciding what to do based on URL
 $hostname = $url[0];
-if(!$hostname) //no hostname? Well let's render the info page
-    echo renderInfoPage();
+if(!$hostname || $url[0] == 'rtfm') //no hostname? Well let's render the info page
+    echo renderInfoPage($url[1]);
 else //handle an upload
 {
     header('Content-Type: application/json');
@@ -34,13 +39,24 @@ else //handle an upload
 
 function handleUpload($hostname)
 {
+    // if a file was correctly uploaded
     if(isset($_FILES["file"]) && $_FILES["file"]["error"] == 0)
     {
         //target name of the backup is the date and the original extension
         $backupname = date("Y-m-d H.i").'.'.pathinfo($_FILES["file"]["name"], PATHINFO_EXTENSION); 
-        $path = ROOT.DS.'data'.DS.$hostname.DS;
+        $path = ROOT.DS.'..'.DS.'data'.DS.$hostname.DS;
         if(!is_dir($path)) mkdir($path); //if the path doesn't exist yet, create it
-        move_uploaded_file($_FILES["file"]["tmp_name"], $path.$backupname);
+
+        // if the user wants to encrypt it
+        if($_REQUEST['enc_key'] || $_REQUEST['pub_key'])
+        {
+            $backupname.='.enc';
+            $e = new Encryption;
+            if(!$e->encryptFile($_FILES["file"]["tmp_name"], ($_REQUEST['enc_key']?:$_REQUEST['pub_key']), $path.$backupname,($_REQUEST['pub_key']?true:false)))
+                return ['status'=>'error','reason'=>'Failed to encrypt. Is the Key valid?'];
+        }
+        else
+            move_uploaded_file($_FILES["file"]["tmp_name"], $path.$backupname);
 
         //upload successful
         if(file_exists($path.$backupname))
@@ -51,7 +67,7 @@ function handleUpload($hostname)
         else
             return ['status'=>'error','reason'=>'Failed to upload. Write permissions?'];
     }
-    else
+    else //some upload error
     {
         http_response_code(404);
         return ['status'=>'error','reason'=>'No file uploaded'];
@@ -67,16 +83,17 @@ function cleanUpForHostname($hostname)
     $count = 0;
     $sizesum = 0;
 
-    $files = array_diff(scandir(ROOT.DS.'data'.DS.$hostname.DS,SCANDIR_SORT_DESCENDING), array('..', '.'));
+    $files = array_diff(scandir(ROOT.DS.'..'.DS.'data'.DS.$hostname.DS,SCANDIR_SORT_DESCENDING), array('..', '.'));
     if($files)
         foreach($files as $file)
         {
-            $filepath = ROOT.DS.'data'.DS.$hostname.DS.$file;
+            $filepath = ROOT.DS.'..'.DS.'data'.DS.$hostname.DS.$file;
             $sizesum+=filesize($filepath);
             $sha1 = sha1_file($filepath);
 
             //if the file size exeeds the users wishes, delete it
             if(defined('KEEP_N_GIGABYTES') && KEEP_N_GIGABYTES > 0 && ($sizesum/pow(1024, 3))>KEEP_N_GIGABYTES) {
+                $sizesum-=filesize($filepath); //take the size away since now we have less files in the folder
                 unlink($filepath);
                 $output[] = "Deleted '$file' because of user setting (keep max of ".KEEP_N_GIGABYTES." gigabytes of backups)";
             }
@@ -90,14 +107,25 @@ function cleanUpForHostname($hostname)
                 unlink($filepath);
                 $output[] = "Deleted '$file' because it's a duplicate";
             }
-            else
+            //if its older than we want it to be, delete it
+            else if(defined('KEEP_N_DAYS') && KEEP_N_DAYS > 0 && (((time() - strtotime(substr($file,0,16))) / (3600*24))> KEEP_N_DAYS) ){
+                unlink($filepath);
+                $output[] = "Deleted '$file' because it's older than the user wants (max ".KEEP_N_DAYS." days)";
+            }
+            else // ok let's not delete this file
                 $hashes[] = $sha1;
         }
     return $output;
 }
 
 // renders the welcome page
-function renderInfoPage()
+function renderInfoPage($file)
 {
-    return file_get_contents('welcome.html');
+    include_once(ROOT.DS.'lib'.DS.'parsedown.php');
+    $p = new Parsedown();
+    if($file && file_exists(ROOT.DS.'..'.DS.'rtfm'.DS.preg_replace("/[^a-zA-Z0-9\.\-_]+/", "", $file)))
+        $mdfile = ROOT.DS.'..'.DS.'rtfm'.DS.$file;
+    else $mdfile = ROOT.DS.'..'.DS.'README.md';
+
+    return $p->text(file_get_contents($mdfile));
 }
