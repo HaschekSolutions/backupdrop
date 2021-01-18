@@ -28,7 +28,7 @@
 
 # Basics
 
-The idea is that you use BackupDrop to upload your backups and cannot be changed by the device you backed up. Some crypto lockers are actively looking for backup devices like NAS or backup drives and delete or encrypt them too.
+The idea is that you use BackupDrop to upload your backups which (after upload) cannot be changed by the device you backed up. Some crypto lockers are actively looking for backup devices like NAS or backup drives and delete or encrypt them too.
 Using BackupDrop the machine you backed up cannot delete or modify or even access past backups.
 
 Also BackupDrop can handle multiple external storage providers and save the backups on `S3`, `FTP` or `Samba`.
