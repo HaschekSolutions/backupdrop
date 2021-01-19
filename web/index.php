@@ -1,7 +1,7 @@
 <?php
 
 // global user settings
-define('KEEP_N_BACKUPS',0);
+define('KEEP_N_BACKUPS',2);
 define('KEEP_N_DAYS',0);
 define('KEEP_N_GIGABYTES',0);
 
@@ -14,7 +14,15 @@ ini_set('display_errors','On');
 date_default_timezone_set('UTC');
 
 //includes
+if(file_exists(ROOT.DS.'..'.DS.'config'.DS.'config.inc.php'))
+    require_once(ROOT.DS.'..'.DS.'config'.DS.'config.inc.php');
+if(file_exists(ROOT.DS.'lib'.DS.'vendor'.DS.'autoload.php'))
+    require_once(ROOT.DS.'lib'.DS.'vendor'.DS.'autoload.php');
+require_once(ROOT.DS.'lib'.DS.'core.php');
 require_once(ROOT.DS.'lib'.DS.'encryption.php');
+require_once(ROOT.DS.'lib'.DS.'helpers.php');
+require_once(ROOT.DS.'lib'.DS.'encryption.php');
+require_once(ROOT.DS.'lib'.DS.'storagecontroller.interface.php');
 
 
 //getting the url as array
@@ -58,6 +66,8 @@ function handleUpload($hostname)
         else
             move_uploaded_file($_FILES["file"]["tmp_name"], $path.$backupname);
 
+        storageControllerUpload($hostname,$backupname);
+
         //upload successful
         if(file_exists($path.$backupname))
         {
@@ -95,21 +105,25 @@ function cleanUpForHostname($hostname)
             if(defined('KEEP_N_GIGABYTES') && KEEP_N_GIGABYTES > 0 && ($sizesum/pow(1024, 3))>KEEP_N_GIGABYTES) {
                 $sizesum-=filesize($filepath); //take the size away since now we have less files in the folder
                 unlink($filepath);
+                storageControllerDelete($hostname,$file);
                 $output[] = "Deleted '$file' because of user setting (keep max of ".KEEP_N_GIGABYTES." gigabytes of backups)";
             }
             //if there are more backups in the directory than the user wanted, delete it
             if(defined('KEEP_N_BACKUPS') && KEEP_N_BACKUPS > 0 && ++$count > KEEP_N_BACKUPS){
                 unlink($filepath);
+                storageControllerDelete($hostname,$file);
                 $output[] = "Deleted '$file' because of user setting (keep max ".KEEP_N_BACKUPS." backups)";
             }
             //if the exact same file has been uploaded before, remove it
             else if(in_array($sha1,$hashes)){ 
                 unlink($filepath);
+                storageControllerDelete($hostname,$file);
                 $output[] = "Deleted '$file' because it's a duplicate";
             }
             //if its older than we want it to be, delete it
             else if(defined('KEEP_N_DAYS') && KEEP_N_DAYS > 0 && (((time() - strtotime(substr($file,0,16))) / (3600*24))> KEEP_N_DAYS) ){
                 unlink($filepath);
+                storageControllerDelete($hostname,$file);
                 $output[] = "Deleted '$file' because it's older than the user wants (max ".KEEP_N_DAYS." days)";
             }
             else // ok let's not delete this file

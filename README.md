@@ -64,12 +64,14 @@ This has created the folder data/**webserver** (because we uploaded the file to 
 
 
 ## Identical upload detection
-If you upload the exact same file twice, BackupDrop will delete the older upload and just keep the new one (only within the same backup source hostname)
+If you upload the exact same file twice (detected by comparing their checksums), BackupDrop will delete the older upload and just keep the new one (only within the same backup source hostname)
 
-```
+```bash
 curl -s -F "file=@webserver.tar.gz" http://localhost:8080/webserver
+```
 
 Result:
+```json
 {
   "status": "ok",
   "filename": "2021-01-18 00.24.gz",
