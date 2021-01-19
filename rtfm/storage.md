@@ -16,7 +16,13 @@ The ALT_FOLDER option will copy every uploaded file from BackupDrop to a local p
 
 ## S3 (compatible) storage
 
-You can also store all uploaded files on S3 or S3 compatible storage like [Minio](https://min.io/).
+You can also store all uploaded files on S3 or S3 compatible storage like [Minio](https://min.io/). But you need to install Amazon's S3 librarys first:
+
+```bash
+# To install dependencies
+cd web/lib
+composer install
+```
 
 |Option | value type | What it does|
 |---                                | ---           | ---|
@@ -28,7 +34,7 @@ You can also store all uploaded files on S3 or S3 compatible storage like [Minio
 ## FTP
 
 Oldschool, insecure and not that fast. But if you use it in combination with [Encryption](/rtfm/encryption.md) this could be OK I guess. I don't judge.
-This probably requires the php-ftp package but on some platforms it's included in the php-common package.
+This probably requires the php-ftp` package but on some platforms it's included in the php-common package.
 
 |Option | value type | What it does|
 |---                      | ---         | ---|

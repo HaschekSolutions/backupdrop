@@ -2,6 +2,8 @@
 
 You really should encrypt before uploading it to BackupDrop but if that's not an option, we've got you covered.
 
+If you are encrypting on your machine I'd reccomend [Age](https://github.com/FiloSottile/age). It's awesome and easy to use and you can encrypt files by SSH public keys (so the encrypting machine never needs to have the private key needed to decrypt).
+
 ## Method 1: Encrypt using Public Key
 This method should only be used on **smaller files**. Because of the nature of the algorithm we can only encrypt 245 characters at a time which means encrypting of large files will be painfully slow.
 
