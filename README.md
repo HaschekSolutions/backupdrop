@@ -21,7 +21,7 @@
 
 # Features
 - Selfhostable
-- Handles backup versions by date and file extension
+- Handles backup versions by date, size and count
 - File based - no database needed
 - Supports multiple [local and cloud endpoints](/rtfm/storage.md)
 - Supports multiple backup sources (machines you want to back up), distinguished by hostname
