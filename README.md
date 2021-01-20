@@ -39,7 +39,11 @@ You can and should encrypt files before uploading them (especially if you're usi
 # Quick start with docker
 
 ```bash
+# without persistence
 docker run --rm --name backupdrop -p 8080:80 -it hascheksolutions/backupdrop
+
+# with persistence
+docker run --restart unless-stopped --name backupdrop -v /tmp/:/var/www/backupdrop/data -p 8080:80 -it hascheksolutions/backupdrop
 ```
 
 # Quick start without docker
