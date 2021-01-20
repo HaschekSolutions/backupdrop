@@ -18,4 +18,4 @@ jobs:
       - name: Build the Docker image
         run: docker build . --file docker/Dockerfile --tag hascheksolutions/backupdrop:$(date +%s) --tag hascheksolutions/backupdrop:latest
       - name: Push the Docker image to the registry
-        run: docker push hascheksolutions/backupdrop --all-tags
+        run: docker push hascheksolutions/backupdrop
