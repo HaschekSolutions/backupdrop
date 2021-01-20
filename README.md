@@ -9,9 +9,9 @@
  
   
 ![](https://img.shields.io/badge/php-7.4%2B-brightgreen.svg)
-[![Apache License](https://img.shields.io/badge/license-Apache-brightgreen.svg?style=flat)](https://github.com/geek-at/backupdrop/blob/master/LICENSE)
-![HitCount](http://hits.dwyl.com/geek-at/backupdrop.svg)]
-[![](https://img.shields.io/github/stars/geek-at/backupdrop.svg?label=Stars&style=social)](https://github.com/geek-at/backupdrop)
+[![Apache License](https://img.shields.io/badge/license-Apache-brightgreen.svg?style=flat)](https://github.com/hascheksolutions/backupdrop/blob/master/LICENSE)
+![HitCount](http://hits.dwyl.com/hascheksolutions/backupdrop.svg)
+[![](https://img.shields.io/github/stars/hascheksolutions/backupdrop.svg?label=Stars&style=social)](https://github.com/hascheksolutions/backupdrop)
 
 #### Selfhosted backup upload target that manages `versions` `encryption` `retention` and supports [cloud endpoints](/rtfm/storage.md)
 
@@ -36,7 +36,13 @@ Also BackupDrop can handle multiple external [storage providers](/rtfm/storage.m
 
 You can and should encrypt files before uploading them (especially if you're using cloud endpoints) but if you can't, BackupDrop can handle it for you using public key or password encryption. [Read more](/rtfm/encryption.md)
 
-# Quick start
+# Quick start with docker
+
+```bash
+docker run --rm --name backupdrop -it hascheksolutions/backupdrop
+```
+
+# Quick start without docker
 
 Start the server (in a prodction environment you'll want to use a real webserver like nginx)
 
@@ -83,10 +89,6 @@ Result:
 ```
 
 ## Configuration
-At the moment you have three options (can be combined)
+To change default settings you need to copy or rename `/config/example.config.inc.php` to `/config/config.inc.php` and change the values as needed.
 
-```php
-define('KEEP_N_BACKUPS',0); //how many backups (files in folder) can there be at the same time
-define('KEEP_N_DAYS',0); //how many days should backups be kept (only triggered on a new successful upload)
-define('KEEP_N_GIGABYTES',0); //how many gigabytes will be kept. If a new upload causes the folder to contain more than this setting, the oldest one will be deleted
-```
+Check out [the example config file](/config/example.config.inc.php) to see what how you can configure BackupDrop.

@@ -34,7 +34,7 @@ composer install
 ## FTP
 
 Oldschool, insecure and not that fast. But if you use it in combination with [Encryption](/rtfm/encryption.md) this could be OK I guess. I don't judge.
-This probably requires the php-ftp` package but on some platforms it's included in the php-common package.
+This probably requires the `php-ftp` package but on some platforms it's included in the `php-common` package.
 
 |Option | value type | What it does|
 |---                      | ---         | ---|
@@ -43,4 +43,4 @@ This probably requires the php-ftp` package but on some platforms it's included 
 |FTP_SSL                  | bool        | If your FTP server supports SSL-FTP (note: not sFTP! not the same), set it to true |
 |FTP_USER                 | string      | FTP Username |
 |FTP_PASS                 | string      | FTP Password |
-|FTP_BASEDIR              | string      | Base path where files will be stored. Must end with / eg `/backups/backupdrop/` |
+|FTP_BASEDIR              | string      | Base path where files will be stored on the FTP server's root. Must end with a slash; eg `/backups/backupdrop/` or just `/` |

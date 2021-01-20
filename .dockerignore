@@ -1,0 +1,4 @@
+.git
+data/**
+web/lib/vendor
+config/config.inc.php

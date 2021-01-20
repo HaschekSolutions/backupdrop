@@ -1,10 +1,5 @@
 <?php
 
-// global user settings
-define('KEEP_N_BACKUPS',2);
-define('KEEP_N_DAYS',0);
-define('KEEP_N_GIGABYTES',0);
-
 // basic path definitions
 define('DS', DIRECTORY_SEPARATOR);
 define('ROOT', dirname(__FILE__));
@@ -14,9 +9,9 @@ ini_set('display_errors','On');
 date_default_timezone_set('UTC');
 
 //includes
-if(file_exists(ROOT.DS.'..'.DS.'config'.DS.'config.inc.php'))
+if(file_exists(ROOT.DS.'..'.DS.'config'.DS.'config.inc.php'))   //only load user config if it exists
     require_once(ROOT.DS.'..'.DS.'config'.DS.'config.inc.php');
-if(file_exists(ROOT.DS.'lib'.DS.'vendor'.DS.'autoload.php'))
+if(file_exists(ROOT.DS.'lib'.DS.'vendor'.DS.'autoload.php'))    //only load composer stuff if it's installed
     require_once(ROOT.DS.'lib'.DS.'vendor'.DS.'autoload.php');
 require_once(ROOT.DS.'lib'.DS.'core.php');
 require_once(ROOT.DS.'lib'.DS.'encryption.php');
