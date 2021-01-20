@@ -4,6 +4,7 @@
 define('DS', DIRECTORY_SEPARATOR);
 define('ROOT', dirname(__FILE__));
 ini_set('display_errors','On');
+set_time_limit(0);
 
 //timezone to UTC (+0)
 date_default_timezone_set('UTC');
