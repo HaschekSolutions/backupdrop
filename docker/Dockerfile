@@ -1,7 +1,7 @@
-FROM alpine:edge
+FROM alpine:3.20
 
-RUN apk add --no-cache redis pwgen sudo socat wget curl git nginx \
-php7-ctype php7-ftp php7-simplexml php7 php7-phar php7-curl php7-openssl php7-mbstring php7-json php7-dom php7-fpm
+RUN apk add --no-cache pwgen sudo socat wget curl git nginx \
+php83-ctype php83-ftp php83-simplexml php83 php83-phar php83-curl php83-openssl php83-mbstring php83-json php83-dom php83-fpm
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer 
 RUN mkdir -p /var/www/backupdrop
@@ -16,12 +16,13 @@ RUN cp /var/www/backupdrop/docker/rootfs/start.sh /etc/start.sh
 RUN chmod +x /etc/start.sh
 
 # nginx stuff
-RUN cp /var/www/backupdrop/docker/rootfs/nginx.conf /etc/nginx/conf.d/default.conf
+ADD docker/rootfs/nginx.conf /etc/nginx/http.d/default.conf
 RUN mkdir -p /run/nginx
 RUN mkdir -p /var/log/nginx
 
 # php stuff
-RUN cp /var/www/backupdrop/docker/rootfs/php7/* /etc/php7/.
+RUN sed -i 's/nobody/nginx/g' /etc/php83/php-fpm.d/www.conf
+RUN sed -i 's/E_ALL \& ~E_DEPRECATED \& ~E_STRICT/E_ALL \& ~E_DEPRECATED \& ~E_STRICT \& ~E_NOTICE \& ~E_WARNING/g' /etc/php83/php.ini
 
 # web interface stuff
 WORKDIR /var/www/backupdrop/web/lib
