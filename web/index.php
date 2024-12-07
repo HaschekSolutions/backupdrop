@@ -82,8 +82,14 @@ function handleUpload($hostname)
     }
     else //some upload error
     {
-        http_response_code(404);
-        return ['status'=>'error','reason'=>'No file uploaded'];
+        $error = $_FILES["file"]["error"];
+        if($error == 1 || $error == 2)
+            http_response_code(413);
+        else if($error == 3)
+            http_response_code(500);
+        else
+            http_response_code(404);
+        return ['status'=>'error','reason'=>'No file uploaded','error'=>uploadErrorTranslator($error)];
     }
 }
 

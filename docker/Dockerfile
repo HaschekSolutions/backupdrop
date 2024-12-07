@@ -23,6 +23,9 @@ RUN mkdir -p /var/log/nginx
 # php stuff
 RUN sed -i 's/nobody/nginx/g' /etc/php83/php-fpm.d/www.conf
 RUN sed -i 's/E_ALL \& ~E_DEPRECATED \& ~E_STRICT/E_ALL \& ~E_DEPRECATED \& ~E_STRICT \& ~E_NOTICE \& ~E_WARNING/g' /etc/php83/php.ini
+# disable upload file size limit
+RUN sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 0/g' /etc/php83/php.ini
+RUN sed -i 's/post_max_size = 8M/post_max_size = 0/g' /etc/php83/php.ini
 
 # web interface stuff
 WORKDIR /var/www/backupdrop/web/lib
