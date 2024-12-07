@@ -3,6 +3,12 @@
 // copy this file to config.inc.php
 // and edit to your needs
 
+
+// AGE encryption settings
+// More info on age encryption: https://github.com/FiloSottile/age
+define('ENCRYPTION_AGE_SSH_PUBKEY',''); // Enter your SSH public key here to automatically encrypt all uploads
+define('ENCRYPTION_AGE_PUBKEY',''); // Enter an "age public key" created with `age-keygen -o key.txt` here to automatically encrypt all uploads with this key
+
 // global settings for retention and version control
 // 0 means unlimited
 define('KEEP_N_BACKUPS',0);     // How many uploads will be saved. Oldest one will be deleted if this number is surpassed

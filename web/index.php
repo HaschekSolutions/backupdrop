@@ -35,7 +35,7 @@ else //handle an upload
     
     //let's filter out the hostname and get rid of every special char except for: . _ -
     $hostname = preg_replace("/[^a-zA-Z0-9\.\-_]+/", "", $hostname);
-    echo json_encode(handleUpload($hostname));
+    echo json_encode(handleUpload($hostname)).PHP_EOL;
 }
 
 
@@ -47,16 +47,23 @@ function handleUpload($hostname)
     if(isset($_FILES["file"]) && $_FILES["file"]["error"] == 0)
     {
         //target name of the backup is the date and the original extension
-        $backupname = date("Y-m-d H.i").'.'.pathinfo($_FILES["file"]["name"], PATHINFO_EXTENSION); 
+        $backupname = date("Y-m-d_H.i").'.'.pathinfo($_FILES["file"]["name"], PATHINFO_EXTENSION); 
         $path = ROOT.DS.'..'.DS.'data'.DS.$hostname.DS;
         if(!is_dir($path)) mkdir($path); //if the path doesn't exist yet, create it
 
-        // if the user wants to encrypt it
+        // if the user wants to encrypt it using custom key
         if($_REQUEST['enc_key'] || $_REQUEST['pub_key'])
         {
             $backupname.='.enc';
             $e = new Encryption;
             if(!$e->encryptFile($_FILES["file"]["tmp_name"], ($_REQUEST['enc_key']?:$_REQUEST['pub_key']), $path.$backupname,($_REQUEST['pub_key']?true:false)))
+                return ['status'=>'error','reason'=>'Failed to encrypt. Is the Key valid?'];
+        }
+        else if(defined('ENCRYPTION_AGE_SSH_PUBKEY') || defined('ENCRYPTION_AGE_PUBKEY') && (new Encryption)->checkAge()) //if the user wants to encrypt it using the predefined key
+        {
+            $backupname.='.age';
+            $e = new Encryption;
+            if(!$e->encryptAge($_FILES["file"]["tmp_name"], $path.$backupname))
                 return ['status'=>'error','reason'=>'Failed to encrypt. Is the Key valid?'];
         }
         else

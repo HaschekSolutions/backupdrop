@@ -1,7 +1,7 @@
 FROM alpine:3.20
 
 RUN apk add --no-cache pwgen sudo socat wget curl git nginx \
-php83-ctype php83-ftp php83-simplexml php83 php83-phar php83-curl php83-openssl php83-mbstring php83-json php83-dom php83-fpm
+php83-ctype php83-ftp php83-simplexml php83 php83-phar php83-curl php83-openssl php83-mbstring php83-json php83-dom php83-fpm age
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer 
 RUN mkdir -p /var/www/backupdrop

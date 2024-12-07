@@ -110,4 +110,41 @@ class Encryption
 
         return $error ? false : $dest;
     }
+
+    function checkAge()
+    {
+        $age = shell_exec('which age');
+        if($age)
+            return true;
+        return false;
+    }
+
+    function encryptAge($source, $dest){
+        if(!$this->checkAge())
+            throw new Exception('age not found');
+        $pubkey = defined('ENCRYPTION_AGE_SSH_PUBKEY') && ENCRYPTION_AGE_SSH_PUBKEY != '' ? ENCRYPTION_AGE_SSH_PUBKEY : false;
+        $sshpubkey = defined('ENCRYPTION_AGE_PUBKEY') && ENCRYPTION_AGE_PUBKEY != '' ? ENCRYPTION_AGE_PUBKEY : false;
+        
+        if(!$pubkey && !$sshpubkey)
+            throw new Exception('No pubkeys configured');
+
+        $cmd = ['age'];
+
+        if($pubkey)
+            $cmd[] = '-r '.escapeshellarg(ENCRYPTION_AGE_SSH_PUBKEY);
+        if($sshpubkey)
+            $cmd[] = '-r '.escapeshellarg(ENCRYPTION_AGE_PUBKEY);
+
+        $cmd[] = '-o '.escapeshellarg($dest);
+        $cmd[] = escapeshellarg($source);
+
+
+        $cmd = implode(' ',$cmd);
+
+        shell_exec($cmd);
+
+        if(file_exists($dest) && filesize($dest) > 0)
+            return true;
+        return false;
+    }
 }

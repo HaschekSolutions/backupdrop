@@ -8,7 +8,7 @@
 <div align="center">
  
   
-![](https://img.shields.io/badge/php-7.4%2B-brightgreen.svg)
+![](https://img.shields.io/badge/php-8.3%2B-brightgreen.svg)
 [![Apache License](https://img.shields.io/badge/license-Apache-brightgreen.svg?style=flat)](https://github.com/hascheksolutions/backupdrop/blob/master/LICENSE)
 ![HitCount](http://hits.dwyl.com/hascheksolutions/backupdrop.svg)
 [![](https://img.shields.io/github/stars/hascheksolutions/backupdrop.svg?label=Stars&style=social)](https://github.com/hascheksolutions/backupdrop)

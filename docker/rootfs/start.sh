@@ -20,6 +20,9 @@ nginx
 _buildConfig() {
     echo "<?php"
 
+    echo "define('ENCRYPTION_AGE_SSH_PUBKEY','${ENCRYPTION_AGE_SSH_PUBKEY:-}');"
+    echo "define('ENCRYPTION_AGE_PUBKEY','${ENCRYPTION_AGE_PUBKEY:-}');"
+
     echo "define('S3_BUCKET','${S3_BUCKET:-}');"
     echo "define('S3_ACCESS_KEY','${S3_ACCESS_KEY:-}');"
     echo "define('S3_SECRET_KEY','${S3_SECRET_KEY:-}');"
