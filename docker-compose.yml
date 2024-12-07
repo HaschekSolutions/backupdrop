@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backupdrop:
+    image: hascheksolutions/backupdrop
+    ports:
+      - "8080:80"
+    environment:
+      # remove unneeded config options
+      - ENCRYPTION_AGE_SSH_PUBKEY=
+      - ENCRYPTION_AGE_PUBKEY=
+      - S3_BUCKET=
+      - S3_ACCESS_KEY=
+      - S3_SECRET_KEY=
+      - S3_ENDPOINT=
+      - KEEP_N_BACKUPS=
+      - KEEP_N_DAYS=
+      - KEEP_N_GIGABYTES=
+      - FTP_SSL=
+      - FTP_SERVER=
+      - FTP_PORT=
+      - FTP_USER=
+      - FTP_PASS=
+      - FTP_BASEDIR=
+    restart: unless-stopped
+    volumes:
+      - ./data:/var/www/backupdrop/data
+
