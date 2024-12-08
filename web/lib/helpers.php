@@ -84,6 +84,8 @@ function uploadErrorTranslator($code){
         4 => 'No file was uploaded',
         6 => 'Missing a temporary folder',
         7 => 'Failed to write file to disk.',
-        8 => 'A PHP extension stopped the file upload.'
+        8 => 'A PHP extension stopped the file upload.',
+        null => 'No file uploaded',
+        default => 'Unknown error'
     };
 }
