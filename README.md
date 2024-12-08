@@ -30,9 +30,35 @@
 # Basics
 
 The idea is that you use BackupDrop to upload your backups, which (after upload) cannot be changed by the device you backed up. Some crypto lockers are actively looking for backup devices like NAS or backup drives and delete or encrypt them too.
-Using BackupDrop the machine you backed up cannot delete or modify or even access past backups.
+Using BackupDrop the machine you backed up cannot delete or modify or even access past backups. It's meant to be a push-only system so you can upload backups via CURL from any device you want to back up from.
 
 Also BackupDrop can handle multiple external [storage providers](/rtfm/storage.md) and save the backups on `S3`, `FTP` or `NFS`.
+
+## Upload using CURL:
+
+```bash
+curl -s -F "file=@theFileYouWantToUpload" https://yourBackupDrop.server.url/[identifier]
+```
+
+For every identifier there will be a directory created in the `data/` folder. It makes sense to use the hostname of the server of name of a specific application you're backing up.
+
+## Example upload script
+
+```bash
+#!/bin/bash
+set -e
+
+mysqldump --all-databases > db.sql
+
+paths="/etc/nginx/ /var/www/ /home/myuser db.sql"
+echo "[i] Starting compression"
+tar --exclude-vcs --exclude="backup.tar.gz" -c -v -z -f backup.tar.gz $paths
+echo "[i] done! Uploading"
+curl -s -F "file=@backup.tar.gz" https://yourBackupDrop.server.url/$(hostname)
+echo "[i] cleanup"
+rm backup.tar.gz
+rm db.sql
+```
 
 You can and should encrypt files before uploading them (especially if you're using cloud endpoints) but if you can't, BackupDrop can handle it for you using public key or password encryption. [Read more](/rtfm/encryption.md)
 
