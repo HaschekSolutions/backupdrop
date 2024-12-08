@@ -3,6 +3,8 @@
 // copy this file to config.inc.php
 // and edit to your needs
 
+// site settings
+define('DISABLE_UPLOADFORM',false); // set to true to disable the upload form and only allow uploads via API
 
 // AGE encryption settings
 // More info on age encryption: https://github.com/FiloSottile/age

@@ -23,19 +23,24 @@ require_once(ROOT.DS.'lib'.DS.'storagecontroller.interface.php');
 
 //getting the url as array
 $url = array_filter(explode('/',ltrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH),'/')));
+$method = $_SERVER['REQUEST_METHOD'];
 
 //main logic
 //deciding what to do based on URL
 $hostname = $url[0];
 if(!$hostname || $url[0] == 'rtfm') //no hostname? Well let's render the info page
     echo renderInfoPage($url[1]);
-else //handle an upload
+else if($method=='POST') //handle an upload
 {
     header('Content-Type: application/json');
     
     //let's filter out the hostname and get rid of every special char except for: . _ -
     $hostname = preg_replace("/[^a-zA-Z0-9\.\-_]+/", "", $hostname);
     echo json_encode(handleUpload($hostname)).PHP_EOL;
+}
+else if($method=='GET' && defined('DISABLE_UPLOADFORM') && DISABLE_UPLOADFORM!==true) //render file upload dialogue
+{
+    include_once(ROOT.DS.'lib'.DS.'upload-template.html.php');
 }
 
 

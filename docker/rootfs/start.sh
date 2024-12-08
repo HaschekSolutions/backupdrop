@@ -20,6 +20,8 @@ nginx
 _buildConfig() {
     echo "<?php"
 
+    echo "define('DISABLE_UPLOADFORM',${DISABLE_UPLOADFORM:-false});"
+
     echo "define('ENCRYPTION_AGE_SSH_PUBKEY','${ENCRYPTION_AGE_SSH_PUBKEY:-}');"
     echo "define('ENCRYPTION_AGE_PUBKEY','${ENCRYPTION_AGE_PUBKEY:-}');"
 
