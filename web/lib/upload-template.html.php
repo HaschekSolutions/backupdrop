@@ -36,10 +36,20 @@
         .files-list { margin-top: 20px; }
         .file-item { padding: 10px; background: #f8f9fa; border-radius: 4px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         .file-info { font-family: monospace; font-size: 13px; }
+        .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; color: #856404; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .warning-box strong { display: block; margin-bottom: 5px; }
     </style>
 </head> 
 <body>
     <div class="container">
+        <?php if(!$config->isDirectoryWritable()): ?>
+        <div class="warning-box">
+            <strong>⚠️ Warning: Directory Not Writable</strong>
+            <p>The backup directory <code><?=htmlspecialchars($config->getDirectoryPath())?></code> is not writable. Backups cannot be saved until this is fixed.</p>
+            <p>Please check your file permissions and ensure the web server has write access to this directory.</p>
+        </div>
+        <?php endif; ?>
+        
         <div class="card">
             <h1>Backup: <?=htmlspecialchars($hostname)?></h1>
             <form action="/<?=htmlspecialchars($url[0])?>" class="dropzone" id="backup-dropzone" method="POST" enctype="multipart/form-data"></form>

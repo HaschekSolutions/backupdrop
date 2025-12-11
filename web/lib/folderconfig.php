@@ -23,6 +23,30 @@ class FolderConfig
             }
         } else {
             $this->config = $this->getDefaultConfig();
+            // Index existing files in the directory
+            $this->indexExistingFiles();
+            // Save the config with indexed files
+            $this->save();
+        }
+    }
+
+    private function indexExistingFiles()
+    {
+        $dir = ROOT.DS.'..'.DS.'data'.DS.$this->hostname;
+        if (is_dir($dir)) {
+            $files = scandir($dir);
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..' || $file === 'config.json') {
+                    continue;
+                }
+                $filepath = $dir.DS.$file;
+                if (is_file($filepath)) {
+                    $this->config['files'][$file] = [
+                        'uploaded' => filemtime($filepath),
+                        'size' => filesize($filepath)
+                    ];
+                }
+            }
         }
     }
 
@@ -115,5 +139,19 @@ class FolderConfig
     public function getRetention()
     {
         return $this->config['retention'];
+    }
+
+    public function isDirectoryWritable()
+    {
+        $dir = dirname($this->configPath);
+        if (!is_dir($dir)) {
+            return is_writable(dirname($dir));
+        }
+        return is_writable($dir);
+    }
+
+    public function getDirectoryPath()
+    {
+        return dirname($this->configPath);
     }
 }
