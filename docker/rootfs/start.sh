@@ -5,8 +5,6 @@ cd /var/www/backupdrop
 echo ' [+] Starting php'
 php-fpm83
 
-chown -R nginx:nginx /var/www/ &
-
 echo ' [+] Starting nginx'
 mkdir -p /var/log/php-fpm/
 touch /var/log/php-fpm/fpm-error.log

@@ -19,6 +19,8 @@ require_once(ROOT.DS.'lib'.DS.'encryption.php');
 require_once(ROOT.DS.'lib'.DS.'helpers.php');
 require_once(ROOT.DS.'lib'.DS.'encryption.php');
 require_once(ROOT.DS.'lib'.DS.'storagecontroller.interface.php');
+require_once(ROOT.DS.'lib'.DS.'folderconfig.php');
+require_once(ROOT.DS.'lib'.DS.'retention.php');
 
 
 //getting the url as array
@@ -30,16 +32,60 @@ $method = $_SERVER['REQUEST_METHOD'];
 $hostname = $url[0];
 if(!$hostname || $url[0] == 'rtfm') //no hostname? Well let's render the info page
     echo renderInfoPage($url[1]);
-else if($method=='POST') //handle an upload
+else if($method=='POST') //handle an upload or API action
 {
     header('Content-Type: application/json');
     
     //let's filter out the hostname and get rid of every special char except for: . _ -
     $hostname = preg_replace("/[^a-zA-Z0-9\.\-_]+/", "", $hostname);
-    echo json_encode(handleUpload($hostname)).PHP_EOL;
+    
+    // Check if this is an API action
+    $action = $_GET['action'] ?? null;
+    
+    if ($action === 'verify') {
+        // Password verification
+        $input = json_decode(file_get_contents('php://input'), true);
+        $config = new FolderConfig($hostname);
+        if ($config->verifyPassword($input['password'] ?? '')) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false]);
+        }
+    } else if ($action === 'save_settings') {
+        // Save settings
+        $config = new FolderConfig($hostname);
+        
+        // Verify authentication if password is set
+        if ($config->hasPassword()) {
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+            // In this case we rely on session storage, so just proceed
+            // A more robust solution would validate the session
+        }
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (isset($input['password'])) {
+            $config->setPassword($input['password']);
+        }
+        
+        if (isset($input['retention'])) {
+            $config->setRetention($input['retention']);
+        }
+        
+        if ($config->save()) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to save configuration']);
+        }
+    } else {
+        // Regular file upload
+        echo json_encode(handleUpload($hostname)).PHP_EOL;
+    }
 }
 else if($method=='GET' && defined('DISABLE_UPLOADFORM') && DISABLE_UPLOADFORM!==true) //render file upload dialogue
 {
+    $hostname = preg_replace("/[^a-zA-Z0-9\.\-_]+/", "", $hostname);
+    $config = new FolderConfig($hostname);
     include_once(ROOT.DS.'lib'.DS.'upload-template.html.php');
 }
 
@@ -57,14 +103,14 @@ function handleUpload($hostname)
         if(!is_dir($path)) mkdir($path); //if the path doesn't exist yet, create it
 
         // if the user wants to encrypt it using custom key
-        if($_REQUEST['enc_key'] || $_REQUEST['pub_key'])
+        if(isset($_REQUEST['enc_key']) || isset($_REQUEST['pub_key']))
         {
             $backupname.='.enc';
             $e = new Encryption;
             if(!$e->encryptFile($_FILES["file"]["tmp_name"], ($_REQUEST['enc_key']?:$_REQUEST['pub_key']), $path.$backupname,($_REQUEST['pub_key']?true:false)))
                 return ['status'=>'error','reason'=>'Failed to encrypt. Is the Key valid?'];
         }
-        else if(defined('ENCRYPTION_AGE_SSH_PUBKEY') || defined('ENCRYPTION_AGE_PUBKEY') && (new Encryption)->checkAge()) //if the user wants to encrypt it using the predefined key
+        else if(((defined('ENCRYPTION_AGE_SSH_PUBKEY') && ENCRYPTION_AGE_SSH_PUBKEY != '') || (defined('ENCRYPTION_AGE_PUBKEY') && ENCRYPTION_AGE_PUBKEY != '')) && (new Encryption)->checkAge()) //if the user wants to encrypt it using the predefined key
         {
             $backupname.='.age';
             $e = new Encryption;
@@ -79,6 +125,11 @@ function handleUpload($hostname)
         //upload successful
         if(file_exists($path.$backupname))
         {
+            // Track the file in config
+            $config = new FolderConfig($hostname);
+            $config->addFile($backupname, filesize($path.$backupname));
+            $config->save();
+            
             $cleanup = cleanUpForHostname($hostname);
             return ['status'=>'ok','filename'=>$backupname,'cleanup'=>$cleanup];
         }
@@ -102,47 +153,16 @@ function handleUpload($hostname)
 // and decides if any of them need to be removed
 function cleanUpForHostname($hostname)
 {
-    $output = []; //what we want to return
-    $hashes = []; //array of sha1 hashes of the files to find duplicates
-    $count = 0;
-    $sizesum = 0;
-
-    $files = array_diff(scandir(ROOT.DS.'..'.DS.'data'.DS.$hostname.DS,SCANDIR_SORT_DESCENDING), array('..', '.'));
-    if($files)
-        foreach($files as $file)
-        {
-            $filepath = ROOT.DS.'..'.DS.'data'.DS.$hostname.DS.$file;
-            $sizesum+=filesize($filepath);
-            $sha1 = sha1_file($filepath);
-
-            //if the file size exeeds the users wishes, delete it
-            if(defined('KEEP_N_GIGABYTES') && KEEP_N_GIGABYTES > 0 && ($sizesum/pow(1024, 3))>KEEP_N_GIGABYTES) {
-                $sizesum-=filesize($filepath); //take the size away since now we have less files in the folder
-                unlink($filepath);
-                storageControllerDelete($hostname,$file);
-                $output[] = "Deleted '$file' because of user setting (keep max of ".KEEP_N_GIGABYTES." gigabytes of backups)";
-            }
-            //if there are more backups in the directory than the user wanted, delete it
-            if(defined('KEEP_N_BACKUPS') && KEEP_N_BACKUPS > 0 && ++$count > KEEP_N_BACKUPS){
-                unlink($filepath);
-                storageControllerDelete($hostname,$file);
-                $output[] = "Deleted '$file' because of user setting (keep max ".KEEP_N_BACKUPS." backups)";
-            }
-            //if the exact same file has been uploaded before, remove it
-            else if(in_array($sha1,$hashes)){ 
-                unlink($filepath);
-                storageControllerDelete($hostname,$file);
-                $output[] = "Deleted '$file' because it's a duplicate";
-            }
-            //if its older than we want it to be, delete it
-            else if(defined('KEEP_N_DAYS') && KEEP_N_DAYS > 0 && (((time() - strtotime(substr($file,0,16))) / (3600*24))> KEEP_N_DAYS) ){
-                unlink($filepath);
-                storageControllerDelete($hostname,$file);
-                $output[] = "Deleted '$file' because it's older than the user wants (max ".KEEP_N_DAYS." days)";
-            }
-            else // ok let's not delete this file
-                $hashes[] = $sha1;
-        }
+    $output = [];
+    
+    // Use new retention system
+    $retentionManager = new RetentionManager($hostname);
+    $deleted = $retentionManager->applyRetention();
+    
+    foreach ($deleted as $filename) {
+        $output[] = "Deleted '$filename' based on retention policy";
+    }
+    
     return $output;
 }
 

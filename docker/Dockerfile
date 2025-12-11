@@ -21,20 +21,35 @@ RUN mkdir -p /run/nginx
 RUN mkdir -p /var/log/nginx
 
 # php stuff
-RUN sed -i 's/nobody/nginx/g' /etc/php83/php-fpm.d/www.conf
+RUN sed -i 's/nobody/backupdrop/g' /etc/php83/php-fpm.d/www.conf
+RUN sed -i 's/group = nobody/group = backupdrop/g' /etc/php83/php-fpm.d/www.conf
 RUN sed -i 's/E_ALL \& ~E_DEPRECATED \& ~E_STRICT/E_ALL \& ~E_DEPRECATED \& ~E_STRICT \& ~E_NOTICE \& ~E_WARNING/g' /etc/php83/php.ini
 # disable upload file size limit
 RUN sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 0/g' /etc/php83/php.ini
 RUN sed -i 's/post_max_size = 8M/post_max_size = 0/g' /etc/php83/php.ini
+# Fix PHP-FPM log directory
+RUN mkdir -p /var/log/php83 && chmod 755 /var/log/php83
 
 # web interface stuff
 WORKDIR /var/www/backupdrop/web/lib
 RUN composer install
 WORKDIR /var/www/backupdrop/
 
-EXPOSE 80
+# Create non-root user and set permissions
+RUN addgroup -g 1000 backupdrop && \
+    adduser -D -u 1000 -G backupdrop backupdrop && \
+    chown -R backupdrop:backupdrop /var/www/backupdrop && \
+    chown -R backupdrop:backupdrop /var/log/nginx && \
+    chown -R backupdrop:backupdrop /var/log/php83 && \
+    chown -R backupdrop:backupdrop /var/lib/nginx && \
+    chown -R backupdrop:backupdrop /run/nginx && \
+    mkdir -p /var/log/php-fpm && \
+    chown -R backupdrop:backupdrop /var/log/php-fpm
+
+# Switch to non-root user
+USER backupdrop
+
+EXPOSE 8080
 VOLUME /var/www/backupdrop/data
 
-
-#CMD ["/bin/ash"]
 ENTRYPOINT ["/etc/start.sh"]

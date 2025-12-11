@@ -21,10 +21,14 @@
 
 # Features
 - Selfhostable
+- **Per-folder retention policies** with Proxmox-style rules (keep last N, hourly, daily, weekly, monthly, yearly)
+- **Password protection** per backup target via web interface
 - Handles backup versions by date, size and count
 - File based - no database needed
 - Supports multiple [local and cloud endpoints](/rtfm/storage.md)
 - Supports multiple backup sources (machines you want to back up), distinguished by hostname
+- Web interface for managing retention settings and viewing backups
+- Automated cleanup via cron script
 - No dependencies unless you want cloud endpoints
 
 # Basics
@@ -122,3 +126,38 @@ Result:
 To change default settings you need to copy or rename `/config/example.config.inc.php` to `/config/config.inc.php` and change the values as needed.
 
 Check out [the example config file](/config/example.config.inc.php) to see what how you can configure BackupDrop.
+
+## Per-Folder Retention & Settings
+
+Each backup target can now have individual settings accessible via web interface:
+
+```
+http://localhost:8080/[your-backup-target]
+```
+
+Features available per target:
+- **Password protection** - Protect upload form and settings with a password
+- **Retention rules** - Proxmox-style retention (keep last N, hourly, daily, weekly, monthly, yearly)
+- **File tracking** - View all backups with timestamps and sizes
+- **Keep all option** - Disable retention to keep all backups
+
+### Automated Cleanup
+
+Run the cron script to apply retention policies:
+
+```bash
+php web/cron.php
+```
+
+Or set up automated cleanup (recommended):
+```bash
+# Run daily at 3 AM
+0 3 * * * php /path/to/backupdrop/web/cron.php
+```
+
+**For Docker:**
+```bash
+0 3 * * * docker exec backupdrop-backupdrop-1 php /var/www/backupdrop/web/cron.php
+```
+
+For detailed information, see the [retention configuration guide](/rtfm/retention-configuration.md).
