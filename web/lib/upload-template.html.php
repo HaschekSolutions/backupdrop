@@ -17,8 +17,8 @@
         .settings-form { display: grid; gap: 20px; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-weight: 600; margin-bottom: 5px; color: #333; }
-        .form-group input[type="number"], .form-group input[type="password"] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        .form-group input[type="number"]:focus, .form-group input[type="password"]:focus { outline: none; border-color: #0087F7; }
+        .form-group input[type="number"], .form-group input[type="password"], .form-group textarea { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: inherit; }
+        .form-group input[type="number"]:focus, .form-group input[type="password"]:focus, .form-group textarea:focus { outline: none; border-color: #0087F7; }
         .form-group small { color: #666; margin-top: 5px; font-size: 13px; }
         .retention-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
         .checkbox-group { display: flex; align-items: center; gap: 10px; }
@@ -106,6 +106,12 @@
                         <input type="number" id="keep_yearly" name="keep_yearly" min="0" value="<?=$config->get('retention')['keep_yearly']?>" placeholder="0 = disabled">
                         <small>Keep N yearly backups</small>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ip-allowlist">IP Allowlist</label>
+                    <textarea id="ip-allowlist" rows="5" placeholder="e.g. 192.168.1.0/24&#10;::1&#10;10.0.0.1"><?= implode("\n", ($config->getIpAllowlist() ?? [])) ?></textarea>
+                    <small>Leave empty to allow uploads from any IP. Supports IPv4, IPv6, and CIDR notation (e.g. 192.168.1.0/24).</small>
                 </div>
 
                 <button type="submit" class="btn btn-primary">Save Settings</button>
@@ -232,7 +238,11 @@
                     keep_weekly: parseInt(formData.get('keep_weekly')) || 0,
                     keep_monthly: parseInt(formData.get('keep_monthly')) || 0,
                     keep_yearly: parseInt(formData.get('keep_yearly')) || 0
-                }
+                },
+                ip_allowlist: document.getElementById('ip-allowlist').value
+                    .split('\n')
+                    .map(s => s.trim())
+                    .filter(s => s.length > 0)
             };
 
             fetch('/' + hostname + '?action=save_settings', {

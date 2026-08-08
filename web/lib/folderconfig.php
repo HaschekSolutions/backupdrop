@@ -63,7 +63,8 @@ class FolderConfig
                 'keep_monthly' => 0,
                 'keep_yearly' => 0
             ],
-            'files' => []
+            'files' => [],
+            'ip_allowlist' => []
         ];
     }
 
@@ -139,6 +140,92 @@ class FolderConfig
     public function getRetention()
     {
         return $this->config['retention'];
+    }
+
+    public function getIpAllowlist(): array
+    {
+        return $this->config['ip_allowlist'] ?? [];
+    }
+
+    public function setIpAllowlist(array $ips)
+    {
+        $valid = [];
+        foreach ($ips as $ip) {
+            if (!is_string($ip)) {
+                continue;
+            }
+            $ip = trim($ip);
+            if ($ip === '' || !$this->isValidIpEntry($ip)) {
+                continue;
+            }
+            $valid[] = $ip;
+        }
+        $this->config['ip_allowlist'] = $valid;
+        $this->save();
+    }
+
+    public function isIpAllowed(string $ip): bool
+    {
+        $allowlist = $this->getIpAllowlist();
+        if (empty($allowlist)) {
+            return true; // No allowlist configured = allow all
+        }
+        foreach ($allowlist as $entry) {
+            if ($this->ipInCidr($ip, $entry)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function isValidIpEntry(string $entry): bool
+    {
+        // Exact IP (IPv4 or IPv6)
+        if (filter_var($entry, FILTER_VALIDATE_IP)) {
+            return true;
+        }
+        // CIDR range
+        if (str_contains($entry, '/')) {
+            [$subnet, $bits] = explode('/', $entry, 2);
+            if (!ctype_digit($bits)) {
+                return false;
+            }
+            $bits = (int)$bits;
+            if (filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                return $bits >= 0 && $bits <= 32;
+            }
+            if (filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                return $bits >= 0 && $bits <= 128;
+            }
+        }
+        return false;
+    }
+
+    private function ipInCidr(string $ip, string $cidr): bool
+    {
+        if (!str_contains($cidr, '/')) {
+            return $ip === $cidr;
+        }
+        [$subnet, $bits] = explode('/', $cidr, 2);
+        $bits = (int)$bits;
+        // Handle IPv4
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $ipLong = ip2long($ip);
+            $subnetLong = ip2long($subnet);
+            $mask = $bits === 0 ? 0 : (~0 << (32 - $bits));
+            return ($ipLong & $mask) === ($subnetLong & $mask);
+        }
+        // Handle IPv6
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) && filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $ipBin = inet_pton($ip);
+            $subnetBin = inet_pton($subnet);
+            $byteMask = str_repeat("\xff", intdiv($bits, 8));
+            $remaining = $bits % 8;
+            if ($remaining > 0) $byteMask .= chr(0xff & (0xff << (8 - $remaining)));
+            $byteMask = str_pad($byteMask, strlen($ipBin), "\x00");
+            return ($ipBin & $byteMask) === ($subnetBin & $byteMask);
+        }
+        return false;
     }
 
     public function isDirectoryWritable()

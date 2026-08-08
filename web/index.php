@@ -21,6 +21,7 @@ require_once(ROOT.DS.'lib'.DS.'encryption.php');
 require_once(ROOT.DS.'lib'.DS.'storagecontroller.interface.php');
 require_once(ROOT.DS.'lib'.DS.'folderconfig.php');
 require_once(ROOT.DS.'lib'.DS.'retention.php');
+require_once(ROOT.DS.'lib'.DS.'historylog.php');
 
 
 //getting the url as array
@@ -71,7 +72,11 @@ else if($method=='POST') //handle an upload or API action
         if (isset($input['retention'])) {
             $config->setRetention($input['retention']);
         }
-        
+
+        if (isset($input['ip_allowlist'])) {
+            $config->setIpAllowlist($input['ip_allowlist']);
+        }
+
         if ($config->save()) {
             echo json_encode(['success' => true]);
         } else {
@@ -97,6 +102,16 @@ function handleUpload($hostname)
     // if a file was correctly uploaded
     if(isset($_FILES["file"]) && $_FILES["file"]["error"] == 0)
     {
+        // IP allowlist check
+        $config = new FolderConfig($hostname);
+        if (!$config->isIpAllowed($_SERVER['REMOTE_ADDR'] ?? '')) {
+            (new HistoryLog($hostname))->append('ip_rejected', [
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+            ]);
+            http_response_code(403);
+            return ['status' => 'error', 'reason' => 'Upload rejected: IP not in allowlist'];
+        }
+
         //target name of the backup is the date and the original extension
         $backupname = date("Y-m-d_H.i").'.'.pathinfo($_FILES["file"]["name"], PATHINFO_EXTENSION); 
         $path = ROOT.DS.'..'.DS.'data'.DS.$hostname.DS;
@@ -126,9 +141,14 @@ function handleUpload($hostname)
         if(file_exists($path.$backupname))
         {
             // Track the file in config
-            $config = new FolderConfig($hostname);
             $config->addFile($backupname, filesize($path.$backupname));
             $config->save();
+
+            (new HistoryLog($hostname))->append('upload', [
+                'file'   => $backupname,
+                'size'   => filesize($path.$backupname),
+                'ip'     => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+            ]);
             
             $cleanup = cleanUpForHostname($hostname);
             return ['status'=>'ok','filename'=>$backupname,'cleanup'=>$cleanup];
@@ -145,6 +165,10 @@ function handleUpload($hostname)
             http_response_code(500);
         else
             http_response_code(404);
+        (new HistoryLog($hostname))->append('upload_failed', [
+            'ip'    => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+            'error' => uploadErrorTranslator($_FILES["file"]["error"] ?? null),
+        ]);
         return ['status'=>'error','reason'=>'No file uploaded','error'=>uploadErrorTranslator($error)];
     }
 }

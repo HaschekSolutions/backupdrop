@@ -1,5 +1,9 @@
 <?php
 
+if (!class_exists('HistoryLog')) {
+    require_once(__DIR__.DIRECTORY_SEPARATOR.'historylog.php');
+}
+
 class RetentionManager
 {
     private $hostname;
@@ -40,6 +44,10 @@ class RetentionManager
                 if (unlink($filepath)) {
                     storageControllerDelete($this->hostname, $file['name']);
                     $this->config->removeFile($file['name']);
+                    (new HistoryLog($this->hostname))->append('deleted', [
+                        'file'   => $file['name'],
+                        'reason' => 'retention',
+                    ]);
                     $deleted[] = $file['name'];
                 }
             }
